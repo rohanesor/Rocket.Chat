@@ -14,8 +14,8 @@ import UTCClock from '../UTCClock';
 import { UserCardRoles, UserCardUsername } from '../UserCard';
 import UserInfoABACAttributes from './UserInfoABACAttributes';
 import UserInfoCopyableText from './UserInfoCopyableText';
-import UserInfoZoomableAvatar from './UserInfoZoomableAvatar';
 import UserInfoPhoneNumberList from './UserInfoPhoneNumberList';
+import UserInfoZoomableAvatar from './UserInfoZoomableAvatar';
 
 type UserInfoDataProps = Serialized<
 	Pick<
