@@ -1,3 +1,4 @@
+import { AbacContractError, AbacErrorCode } from '@rocket.chat/abac';
 import type { IRoom, IUser } from '@rocket.chat/core-typings';
 import { Subscriptions, Rooms } from '@rocket.chat/models';
 
@@ -33,7 +34,7 @@ export async function validateRoomMessagePermissionsAsync(
 	}
 
 	if (isRoomAbacLocked(room, getRoomAbacLockContext())) {
-		throw new Error('error-abac-room-locked');
+		throw new AbacContractError(AbacErrorCode.RoomLocked);
 	}
 
 	if (

@@ -1,5 +1,5 @@
-import { AbacAttributeStoreExternalError, getPdpHealthErrorCode } from '@rocket.chat/abac';
-import { Abac, MeteorError } from '@rocket.chat/core-services';
+import { AbacAttributeStoreExternalError, AbacContractError, AbacErrorCode, getPdpHealthErrorCode } from '@rocket.chat/abac';
+import { Abac } from '@rocket.chat/core-services';
 import type { AbacActor, AbacRoomAttributesGrant } from '@rocket.chat/core-services';
 import type { IServerEvents, IUser } from '@rocket.chat/core-typings';
 import { ServerEvents } from '@rocket.chat/models';
@@ -536,7 +536,7 @@ const abacEndpoints = API.v1
 				}
 
 				if (!settings.get('ABAC_Enabled')) {
-					throw new Error('error-abac-not-enabled');
+					throw new AbacContractError(AbacErrorCode.NotEnabled);
 				}
 
 				return API.v1.success({
@@ -550,7 +550,7 @@ const abacEndpoints = API.v1
 			}
 
 			if (!settings.get('ABAC_Enabled')) {
-				throw new Error('error-abac-not-enabled');
+				throw new AbacContractError(AbacErrorCode.NotEnabled);
 			}
 
 			return API.v1.success({
@@ -575,7 +575,7 @@ const abacEndpoints = API.v1
 		},
 		async function action() {
 			if (!settings.get('ABAC_Enabled')) {
-				throw new Error('error-abac-not-enabled');
+				throw new AbacContractError(AbacErrorCode.NotEnabled);
 			}
 
 			const result = await Abac.validateCreationAttributes(
@@ -615,7 +615,7 @@ const abacEndpoints = API.v1
 				}
 
 				if (!settings.get('ABAC_Enabled')) {
-					throw new Error('error-abac-not-enabled');
+					throw new AbacContractError(AbacErrorCode.NotEnabled);
 				}
 
 				const { count } = await getPaginationItems(bodyParams);
@@ -630,12 +630,12 @@ const abacEndpoints = API.v1
 			}
 
 			if (!settings.get('ABAC_Enabled')) {
-				throw new Error('error-abac-not-enabled');
+				throw new AbacContractError(AbacErrorCode.NotEnabled);
 			}
 
 			const { members, attributes, excludeSelf = false } = bodyParams;
 			if (members.length + (excludeSelf ? 0 : 1) > settings.get<number>('API_User_Limit')) {
-				throw new MeteorError('error-abac-preview-too-many-members', 'Too many members to preview');
+				throw new AbacContractError(AbacErrorCode.PreviewTooManyMembers);
 			}
 
 			const result = await Abac.previewCreationMembers(members, toAbacAttributeDefinitions(attributes) ?? [], toAbacActor(this.user), {

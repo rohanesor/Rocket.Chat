@@ -118,7 +118,7 @@ import { IS_EE, URL_MONGODB } from '../../e2e/config/constants';
 				.expect(400)
 				.expect((res) => {
 					expect(res.body).to.have.property('success', false);
-					expect(res.body.error).to.include('error-abac-room-locked');
+					expect(res.body).to.include({ error: 'error-abac-room-locked', errorType: 'error-abac-room-locked' });
 				});
 		});
 
@@ -130,7 +130,7 @@ import { IS_EE, URL_MONGODB } from '../../e2e/config/constants';
 				.expect(400)
 				.expect((res) => {
 					expect(res.body).to.have.property('success', false);
-					expect(res.body.error).to.include('error-abac-room-locked');
+					expect(res.body).to.include({ error: 'error-abac-room-locked', errorType: 'error-abac-room-locked' });
 				});
 		});
 
@@ -231,7 +231,7 @@ import { IS_EE, URL_MONGODB } from '../../e2e/config/constants';
 				.expect(400)
 				.expect((res) => {
 					expect(res.body).to.have.property('success', false);
-					expect(res.body.error).to.include('error-abac-room-locked');
+					expect(res.body).to.include({ error: 'error-abac-room-locked', errorType: 'error-abac-room-locked' });
 				});
 		});
 
@@ -283,7 +283,10 @@ import { IS_EE, URL_MONGODB } from '../../e2e/config/constants';
 				.expect(400)
 				.expect((res) => {
 					expect(res.body).to.have.property('success', false);
-					expect(res.body.error).to.include('error-abac-public-room-creation-blocked');
+					expect(res.body).to.include({
+						error: 'error-abac-public-room-creation-blocked',
+						errorType: 'error-abac-public-room-creation-blocked',
+					});
 				});
 		});
 
@@ -322,7 +325,7 @@ import { IS_EE, URL_MONGODB } from '../../e2e/config/constants';
 				.expect(400)
 				.expect((res) => {
 					expect(res.body).to.have.property('success', false);
-					expect(res.body.error).to.include('error-abac-attributes-required');
+					expect(res.body).to.include({ error: 'error-abac-attributes-required', errorType: 'error-abac-attributes-required' });
 				});
 		});
 	});
@@ -408,7 +411,7 @@ import { IS_EE, URL_MONGODB } from '../../e2e/config/constants';
 				.expect(400)
 				.expect((res) => {
 					expect(res.body).to.have.property('success', false);
-					expect(res.body.error).to.include('error-abac-room-locked');
+					expect(res.body).to.include({ error: 'error-abac-room-locked', errorType: 'error-abac-room-locked' });
 				});
 		});
 
