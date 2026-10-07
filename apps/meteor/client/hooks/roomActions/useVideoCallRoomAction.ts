@@ -1,4 +1,3 @@
-import { isRoomFederated } from '@rocket.chat/core-typings';
 import { useStableCallback, useStableArray } from '@rocket.chat/fuselage-hooks';
 import { usePermission, useSetting, useUser } from '@rocket.chat/ui-contexts';
 import type { RoomToolboxActionConfig } from '@rocket.chat/ui-contexts';
@@ -13,14 +12,16 @@ import {
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { federationAllowsVideoCall } from '../../lib/videoConference/federatedVideoCalls';
 import { useRoom } from '../../views/room/contexts/RoomContext';
 import { useVideoConfWarning } from '../../views/room/contextualBar/VideoConference/hooks/useVideoConfWarning';
+import { useFederatedVideoCallsEnabled } from '../useFederatedVideoCallsEnabled';
 
 export const useVideoCallRoomAction = () => {
 	const { t } = useTranslation();
 	const room = useRoom();
 	const user = useUser();
-	const federated = isRoomFederated(room);
+	const federatedCallsEnabled = useFederatedVideoCallsEnabled();
 
 	const ownUser = room.uids?.length === 1 || false;
 
@@ -54,7 +55,7 @@ export const useVideoCallRoomAction = () => {
 
 	const visible = groups.length > 0;
 	const allowed = visible && permittedToCallManagement && (!user?.username || !room.muted?.includes(user.username)) && !ownUser;
-	const disabled = federated || (!!room.ro && !permittedToPostReadonly) || room.archived;
+	const disabled = !federationAllowsVideoCall(room, federatedCallsEnabled) || (!!room.ro && !permittedToPostReadonly) || room.archived;
 	const tooltip = disabled ? t('core.Video_Call_unavailable_for_this_type_of_room') : undefined;
 
 	const handleOpenVideoConf = useStableCallback(async () => {
