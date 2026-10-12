@@ -524,7 +524,7 @@ const abacEndpoints = API.v1
 	)
 
 	.post(
-		'abac/membership.preview',
+		'abac/rooms.evaluateMembership',
 		{
 			authRequired: true,
 			permissionsRequired: ['create-abac-managed-room'],
