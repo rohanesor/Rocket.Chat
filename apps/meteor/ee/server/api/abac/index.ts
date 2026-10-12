@@ -490,7 +490,7 @@ const abacEndpoints = API.v1
 		},
 	)
 	.post(
-		'abac/attribute-assignability',
+		'abac/attributes.checkAssignability',
 		{
 			authRequired: true,
 			permissionsRequired: ['create-abac-managed-room'],
