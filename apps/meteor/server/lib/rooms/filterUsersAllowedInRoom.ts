@@ -6,3 +6,7 @@ export type AbacEvaluableUser = Pick<IUser, '_id' | 'username'>;
 export const filterUsersAllowedInRoom = makeFunction(
 	async (users: AbacEvaluableUser[], _room: IRoom): Promise<AbacEvaluableUser[]> => users,
 );
+
+export const filterUsersAllowedInRoomOrThrow = makeFunction(
+	async (users: AbacEvaluableUser[], _room: IRoom): Promise<AbacEvaluableUser[]> => users,
+);
