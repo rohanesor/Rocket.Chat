@@ -1485,8 +1485,18 @@ describe('AbacService (unit)', () => {
 		const alice = { _id: 'alice', username: 'alice', name: 'Alice', emails: [] };
 		const bob = { _id: 'bob', username: 'bob', name: 'Bob', emails: [] };
 
-		const usePdp = (evaluateSubjectsAgainstAttributes: jest.Mock) => {
-			(service as any).pdp = { isAvailable: jest.fn().mockResolvedValue(true), evaluateSubjectsAgainstAttributes };
+		const joining = { creatorJoins: true };
+		const leaving = { creatorJoins: false };
+
+		const usePdp = (
+			evaluateSubjectsAgainstAttributes: jest.Mock,
+			checkUsernamesMatchAttributes = jest.fn().mockResolvedValue(undefined),
+		) => {
+			(service as any).pdp = {
+				isAvailable: jest.fn().mockResolvedValue(true),
+				evaluateSubjectsAgainstAttributes,
+				checkUsernamesMatchAttributes,
+			};
 			return evaluateSubjectsAgainstAttributes;
 		};
 
@@ -1507,7 +1517,7 @@ describe('AbacService (unit)', () => {
 		it('evaluates the creator together with the members', async () => {
 			const evaluate = usePdp(jest.fn().mockResolvedValue({ compliant: ['test-user', 'alice'], nonCompliant: ['bob'], inconclusive: [] }));
 
-			const result = await service.previewCreationMembers(['alice', 'bob'], attributes, fakeActor);
+			const result = await service.previewCreationMembers(['alice', 'bob'], attributes, fakeActor, joining);
 
 			expect(mockUsersFind.mock.calls[0][0]).toEqual({ $or: [{ _id: 'test-user' }, { username: { $in: ['alice', 'bob'] } }] });
 			expect(evaluate).toHaveBeenCalledWith([creator, alice, bob], attributes, expect.anything());
@@ -1525,18 +1535,28 @@ describe('AbacService (unit)', () => {
 			});
 		});
 
-		it('reports the creator who would not be added', async () => {
+		it('reports how a creator who stays out of the room would be evaluated', async () => {
 			usePdp(jest.fn().mockResolvedValue({ compliant: ['alice'], nonCompliant: [], inconclusive: ['test-user', 'bob'] }));
 
-			const result = await service.previewCreationMembers(['alice', 'bob'], attributes, fakeActor);
+			const result = await service.previewCreationMembers(['alice', 'bob'], attributes, fakeActor, leaving);
 
 			expect(result).toMatchObject({ allowed: true, preview: { creator: 'inconclusive' } });
+		});
+
+		it('refuses a joining creator the PDP would not admit, as creation does', async () => {
+			const evaluate = usePdp(jest.fn(), jest.fn().mockRejectedValue(new OnlyCompliantCanBeAddedToRoomError()));
+
+			await expect(service.previewCreationMembers(['alice'], attributes, fakeActor, joining)).resolves.toMatchObject({
+				allowed: false,
+				reason: 'creator-not-admitted',
+			});
+			expect(evaluate).not.toHaveBeenCalled();
 		});
 
 		it('refuses when no PDP is configured, rather than reporting everyone as compliant', async () => {
 			(service as any).pdp = null;
 
-			await expect(service.previewCreationMembers(['alice'], attributes, fakeActor)).resolves.toEqual({
+			await expect(service.previewCreationMembers(['alice'], attributes, fakeActor, joining)).resolves.toEqual({
 				allowed: false,
 				reason: 'unavailable',
 				code: 'error-pdp-unavailable',
@@ -1547,7 +1567,7 @@ describe('AbacService (unit)', () => {
 		it('refuses when the PDP is unavailable', async () => {
 			(service as any).pdp = { isAvailable: jest.fn().mockResolvedValue(false), evaluateSubjectsAgainstAttributes: jest.fn() };
 
-			await expect(service.previewCreationMembers(['alice'], attributes, fakeActor)).resolves.toMatchObject({
+			await expect(service.previewCreationMembers(['alice'], attributes, fakeActor, joining)).resolves.toMatchObject({
 				allowed: false,
 				reason: 'unavailable',
 			});
@@ -1556,7 +1576,7 @@ describe('AbacService (unit)', () => {
 		it('reports decisions as unavailable when the evaluation fails', async () => {
 			usePdp(jest.fn().mockRejectedValue(new Error('virtru down')));
 
-			await expect(service.previewCreationMembers(['alice'], attributes, fakeActor)).resolves.toEqual({
+			await expect(service.previewCreationMembers(['alice'], attributes, fakeActor, joining)).resolves.toEqual({
 				allowed: false,
 				reason: 'unavailable',
 				code: 'error-pdp-unavailable',
@@ -1566,7 +1586,7 @@ describe('AbacService (unit)', () => {
 		it('refuses values the creator may not assign, before evaluating anyone', async () => {
 			const evaluate = usePdp(jest.fn());
 
-			await expect(service.previewCreationMembers(['alice'], [{ key: 'dept', values: ['sales'] }], fakeActor)).resolves.toEqual({
+			await expect(service.previewCreationMembers(['alice'], [{ key: 'dept', values: ['sales'] }], fakeActor, joining)).resolves.toEqual({
 				allowed: false,
 				reason: 'not-entitled',
 				code: 'error-invalid-attribute-values',
@@ -1576,11 +1596,11 @@ describe('AbacService (unit)', () => {
 			expect(mockUsersFind).not.toHaveBeenCalled();
 		});
 
-		it('previews values the creator does not hold when restricting to owned attributes is off', async () => {
+		it('previews values the creator does not hold for a room they stay out of, when restricting to owned attributes is off', async () => {
 			mockSettingsGet.mockImplementation(async () => false);
 			const evaluate = usePdp(jest.fn().mockResolvedValue({ compliant: ['alice'], nonCompliant: ['test-user'], inconclusive: [] }));
 
-			const result = await service.previewCreationMembers(['alice'], [{ key: 'dept', values: ['sales'] }], fakeActor);
+			const result = await service.previewCreationMembers(['alice'], [{ key: 'dept', values: ['sales'] }], fakeActor, leaving);
 
 			expect(evaluate).toHaveBeenCalled();
 			expect(result).toMatchObject({ allowed: true, preview: { creator: 'nonCompliant' } });
@@ -1589,7 +1609,9 @@ describe('AbacService (unit)', () => {
 		it('refuses attributes that do not exist', async () => {
 			const evaluate = usePdp(jest.fn());
 
-			await expect(service.previewCreationMembers(['alice'], [{ key: 'region', values: ['emea'] }], fakeActor)).resolves.toMatchObject({
+			await expect(
+				service.previewCreationMembers(['alice'], [{ key: 'region', values: ['emea'] }], fakeActor, joining),
+			).resolves.toMatchObject({
 				allowed: false,
 				reason: 'invalid',
 			});
